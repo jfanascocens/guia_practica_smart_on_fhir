@@ -60,17 +60,17 @@ En Credentials
 
 ->El public Key Set se genera a partir del JWT. Tanto JWT como Public Key Set se crean en el codigo Python Cliente: [Script en Python 3](cliente_oauth2.ipynb), y desde ahi se puede copiar y pegar como valores, siguiendo el formato del diccionario con clave "Keys":{[ aquí se pega el Public Key Set generado con el código ]} 
 
-![Client Main](/images/client_main.png)
+[Client Main](/images/client_main.png)
 
-![Client Access](/images/cliente_access.png)
+[Client Access](/images/cliente_access.png)
 
-![Client Credentials](/images/client_credentials.png)
+[Client Credentials](/images/client_credentials.png)
 
-![Client Tokens](/images/client_tokens.png)
+[Client Tokens](/images/client_tokens.png)
 
-![Client Crypto](/images/client_crypto.png)
+[Client Crypto](/images/client_crypto.png)
 
-![Client Others](/images/client_others.png)
+[Client Others](/images/client_others.png)
 
 ### 3) Al cliente se le asignan los permisos usando los Scopes.
 
