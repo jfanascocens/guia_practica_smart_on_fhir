@@ -43,12 +43,12 @@ Cliente: [Script en Python 3](cliente_oauth2.ipynb)
 
 # STEP BY STEP:
 
-Instalar servidor de autenticación/autorización MitreID Connect
+## 1) Instalar servidor de autenticación/autorización MitreID Connect
 
 [Instrucciones aquí](https://github.com/mitreid-connect/OpenID-Connect-Java-Spring-Server/wiki/Build-instructions)
 
 
-## Configurar Cliente en servidor MitreID Connect
+## 2) Configurar Cliente en servidor MitreID Connect
 
 El grant type indicado por Smart on Fhir es "client Credentials"
 Opcionalmente, permitir la introspección (checkbox en access)
@@ -57,40 +57,27 @@ En Credentials
 ->algoritmo de firma puede ser RSA384, o ES384, o Allow Any para permitir cualquier algoritmo
 ->El public Key Set se genera a partir del JWT. Tanto JWT como Public Key Set se crean en el codigo Python Cliente: [Script en Python 3](cliente_oauth2.ipynb), y desde ahi se puede copiar y pegar como valores, siguiendo el formato del diccionario con clave "Keys":{[ aquí se pega el Public Key Set generado con el código ]} 
 
-Registro de cliente
-![Pestaña Credentials](/images/client_credentials.png)
+![Client Main](/images/client_main.png)
 
+![Client Access](/images/cliente_access.png)
+![Client Credentials](/images/client_credentials.png)
 
-### Al cliente se le asignan los permisos usando los Scopes.
+![Client Tokens](/images/client_tokens.png)
+
+![Client Crypto](/images/client_crypto.png)
+![Client Others](/images/client_others.png)
+
+### 3) Al cliente se le asignan los permisos usando los Scopes.
 
 Esto es una notación simplemente, la cual se debe registrar en el servidor de autorización y que también maneja el servidor de recursos.
 No obstante que es una notación simplemente, se debe seguir las siguientes indicaciones de la [guia Smart on FHIR](https://www.hl7.org/fhir/smart-app-launch/scopes-and-launch-context.html)
 
-### Crear claves publica y privada del cliente.
+## Los pasos a continuación se pueden ejecutar como script en consola de Python3 o, más directamente, en Jupyter Notebook o similar compatible con el formato ipynb
+Ver archivo 
+
+### 4) Crear claves publica y privada del cliente.
 Se guardan en archivos locales private1.pem y public1.pem
 
-     from Crypto.PublicKey import RSA
-    key = RSA.generate(2048)
-    pv_key_string = key.exportKey()
-    publicPem=str()
-    
-    with open ("private1.pem", "w") as prv_file:
-        print("{}".format(pv_key_string.decode()), file=prv_file)
-    
-    pb_key_string = key.publickey().exportKey()
-    with open ("public1.pem", "w") as pub_file:
-        print("{}".format(pb_key_string.decode()), file=pub_file)
-		
-	#Mostrar los archivos de claves y guardarlos en variables útiles en todo el notebook.
-    publicPem=str()
-    privatePem=str()
-    with open ("public1.pem", "r") as pub_file:
-        #print(pub_file.read())
-        publicPem=pub_file.read()
-    with open ("private1.pem", "r") as pub_file:
-        #print(pub_file.read())
-        privatePem=pub_file.read()
-    print(publicPem)
 
 
 
