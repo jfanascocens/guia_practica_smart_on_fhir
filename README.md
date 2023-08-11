@@ -53,18 +53,23 @@ Cliente: [Script en Python 3](cliente_oauth2.ipynb)
 El grant type indicado por Smart on Fhir es "client Credentials"
 Opcionalmente, permitir la introspección (checkbox en access)
 En Credentials 
+
 ->Asymmetrically-signed JWT assertion
+
 ->algoritmo de firma puede ser RSA384, o ES384, o Allow Any para permitir cualquier algoritmo
+
 ->El public Key Set se genera a partir del JWT. Tanto JWT como Public Key Set se crean en el codigo Python Cliente: [Script en Python 3](cliente_oauth2.ipynb), y desde ahi se puede copiar y pegar como valores, siguiendo el formato del diccionario con clave "Keys":{[ aquí se pega el Public Key Set generado con el código ]} 
 
 ![Client Main](/images/client_main.png)
 
 ![Client Access](/images/cliente_access.png)
+
 ![Client Credentials](/images/client_credentials.png)
 
 ![Client Tokens](/images/client_tokens.png)
 
 ![Client Crypto](/images/client_crypto.png)
+
 ![Client Others](/images/client_others.png)
 
 ### 3) Al cliente se le asignan los permisos usando los Scopes.
@@ -72,35 +77,16 @@ En Credentials
 Esto es una notación simplemente, la cual se debe registrar en el servidor de autorización y que también maneja el servidor de recursos.
 No obstante que es una notación simplemente, se debe seguir las siguientes indicaciones de la [guia Smart on FHIR](https://www.hl7.org/fhir/smart-app-launch/scopes-and-launch-context.html)
 
-## Los pasos a continuación se pueden ejecutar como script en consola de Python3 o, más directamente, en Jupyter Notebook o similar compatible con el formato ipynb
-Ver archivo 
+## Los pasos a continuación se ejecutan a través de codigo en Python3(idealmente desde Jupyter Notebook o similar
+Ver archivo [cliente_oauth2.ipynb] (cliente_oauth2.ipynb)
 
 ### 4) Crear claves publica y privada del cliente.
-Se guardan en archivos locales private1.pem y public1.pem
+### 5) Crear JWT
 
+Crear JWK a partir de una clave pública PEM.
 
+El JWK se entrega al servidor de autenticación/autorización al momento de creación del registro del cliente.
 
-
-###Crear JWT
-
-    # Crear JWK a partir de una clave pública PEM.
-    #### el JWK se entrega al servidor de autenticación/autorización al momento de creación del registro del cliente.
-    import base64
-    import hashlib
-    import json
-    from cryptography.hazmat.primitives import serialization
-    from math import ceil
-    from datetime import datetime, timedelta
-    
-    def pem_to_jwk(pem_public_key):
-        # Cargar la clave pública desde el formato PEM
-        public_key = serialization.load_pem_public_key(pem_public_key.encode(), backend=None)
-    
-        # Obtener los componentes de la clave pública
-        e = public_key.public_numbers().e
-        n = public_key.public_numbers().n
-    
-        # Construir el objeto JWK
         jwk = {
             "kty": "RSA",
             "e": base64.urlsafe_b64encode(e.to_bytes(ceil(e.bit_length() / 8))).decode().rstrip('='),
@@ -109,137 +95,26 @@ Se guardan en archivos locales private1.pem y public1.pem
             "alg": "RS384",  # Algoritmo de firma (puedes cambiarlo si es necesario)
             "n": base64.urlsafe_b64encode(n.to_bytes(ceil(n.bit_length() / 8))).decode().rstrip('=')
         }
-    
-        return jwk
-    
-    def generate_kid(pem_public_key):
-        # Calcular el hash SHA-256 de la clave pública para obtener el kid
-        public_key = serialization.load_pem_public_key(pem_public_key.encode(), backend=None)
-        sha256_hash = hashlib.sha256(public_key.public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
-        )).digest()
-    
-        # Tomar los primeros 16 caracteres del hash como kid
-        kid = base64.urlsafe_b64encode(sha256_hash)[:16].decode()
-    
-        return kid
-    
-    # Ejemplo de uso:
-    pem_public_key = publicPem
-    
-    jwk = pem_to_jwk(pem_public_key)
-    print(json.dumps(jwk, indent=2))
-    
 
 
+### 6) Registrar el cliente en el servidor
+En la sección "Credentials" de la configuración del cliente en el servidor de autenticación, hay un campo de Public Key Set, que si se selecciona la opción by Value permite ingresar el jwk creado en el paso anterior.
+
+![Client Credentials](/images/client_credentials.png)
 
 
-Registrar el cliente en el servidor
+### 7)Crear el client assertion
 
-[imagen](imagenMitreID_config_cliente_Credentials)
-
-
-
-Crear el client assertion
+Client Assertion es el JWK firmado con la clave privada.
 
 
-    #Crear client assertion firmando el JWT con clave privada
-    
-    import jwt
-    import time
-    
-    import timedelta
-    from datetime import datetime, timedelta
-    
-    def create_client_assertion(client_id, private_key_path, token_endpoint):
-        # Leer el contenido de la clave privada
-        #with open(private_key_path, 'r') as f:
-            
-        # Crear el payload para el JWT
-        iat = int(time.time())
-        exp = iat + 3600  # El token expirará en 1 hora (3600 segundos)
-        payload = {
-            "iss": client_id,
-            "sub": client_id,
-            "aud": token_endpoint,
-            "iat": iat,
-            "exp": datetime.utcnow()+timedelta(minutes=4)
-        }
-    
-        # Crear el client_assertion JWT utilizando la clave privada
-        client_assertion = jwt.encode(payload, private_key, algorithm='RS384')
-    
-        return client_assertion
-    
-    # Ejemplo de uso:
-    #El Client ID lo entrega el servidor de autenticación, al momento de crear el registro del cliente en el sistema
-    client_id = "8bc6bc6d-2da5-424b-be6a-d0491dd1c6ce"
-    
-    private_key= privatePem
-    token_endpoint = "http://localhost:8080/openid-connect-server-webapp/token" # este es el endpoint del servidor de autorización
-    
-    client_assertion = create_client_assertion(client_id, private_key, token_endpoint)
-    print("Client Assertion JWT:", client_assertion)
-    #print(client_assertion.decode('utf-8'))
-    
-    
+### 8) Ejecutar el request de autorización.
 
+Preparar y ejecutar Request con los headers y el body donde se incluye el client_assertion
+    
+### (Opcional) Servidor de recursos ejecuta introspección contra servidor de autenticación/autorización
 
-Ejecutar el request de autorización.
-
-    # Preparar Request con los headers y el body que incluye el client_assertion
-    
-    
-    import requests
-    
-    def make_token_request():
-        url = 'http://localhost:8080/openid-connect-server-webapp/token'
-        headers = {
-            'accept': 'application/json',
-            'Content-Type': 'application/x-www-form-urlencoded'
-        }
-        data = {
-            'grant_type': 'client_credentials',
-            'scope': 'profile',
-            'client_assertion_type': 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
-            'client_assertion': client_assertion
-        }
-    
-        response = requests.post(url, headers=headers, data=data)
-    
-        if response.status_code == 200:
-            token_data = response.json()
-            access_token = token_data.get('access_token')
-            
-            print("Access Token:", access_token)
-            return access_token
-        else:
-            print(f"Error en la solicitud: {response.status_code} - {response.text}")
-        
-    
-    
-    # Ejecutar Request.
-    access_token=make_token_request()
-    
-
-
-###(Opcional) Servidor de recursos ejecuta introspección contra servidor de autenticación/autorización
-
-    body_intro = {
-        'token': access_token,
-        'client_assertion': encoded_jwt.decode('utf-8'),
-        'client_assertion_type': 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
-    
-    
-    }
-    print(body_intro)
-    
-    intr = requests.post('http://localhost:8080/openid-connect-server-webapp/introspect',
-                         headers=headers,
-                         data=urlencode(body_intro))
-    print(intr.content)
-
+La introspección es un proceso en el cual el servidor de recursos (FHIR), quien recibió un token de autorización de parte de un cliente, se lo pasa al servidor de autenticación/autorización para determinar su validez y verificar sus datos.
 
 ## License
 
